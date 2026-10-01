@@ -1,0 +1,55 @@
+{% extends "layouts/main.html" %}
+
+{% from "govuk/components/back-link/macro.njk" import govukBackLink %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/error-summary/macro.njk" import govukErrorSummary %}
+{% from "govuk/components/radios/macro.njk" import govukRadios %}
+
+{% set pageName = "Assign issue " + issue.id %}
+
+{% block backLink %}
+  {{ govukBackLink({ text: "Back to issue", href: "/issues/" + issue.id }) }}
+{% endblock %}
+
+{% block content %}
+
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    {% if error %}
+      {{ govukErrorSummary({
+        titleText: "There is a problem",
+        errorList: [{ text: error, href: "#assign-to" }]
+      }) }}
+    {% endif %}
+
+    <span class="govuk-caption-l">Issue {{ issue.id }} &middot; CPH {{ issue.cph }}</span>
+
+    <form method="post" novalidate>
+
+      {{ govukRadios({
+        idPrefix: "assign-to",
+        name: "_assignTo",
+        fieldset: {
+          legend: {
+            text: "Who should work on this issue?",
+            isPageHeading: true,
+            classes: "govuk-fieldset__legend--l"
+          }
+        },
+        items: assignItems,
+        errorMessage: { text: error } if error
+      }) }}
+
+      {{ govukButton({ text: "Save assignment" }) }}
+
+      <p class="govuk-body">
+        <a class="govuk-link govuk-link--no-visited-state" href="/issues/{{ issue.id }}">Cancel</a>
+      </p>
+
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,187 @@
+{% extends "layouts/main.html" %}
+
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/checkboxes/macro.njk" import govukCheckboxes %}
+{% from "govuk/components/input/macro.njk" import govukInput %}
+{% from "govuk/components/pagination/macro.njk" import govukPagination %}
+{% from "govuk/components/select/macro.njk" import govukSelect %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+
+{% set pageName = "Issues" %}
+
+{% block content %}
+
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-full">
+    <h1 class="govuk-heading-l">Issues</h1>
+  </div>
+</div>
+
+<div class="govuk-grid-row">
+
+  <div class="govuk-grid-column-one-quarter">
+    <form method="get" action="/issues" class="app-filters">
+      <input type="hidden" name="filtered" value="true">
+
+      <h2 class="govuk-heading-m">Filter</h2>
+
+      {{ govukInput({
+        id: "search",
+        name: "search",
+        value: filters.search,
+        label: {
+          text: "CPH, issue ID or holding",
+          classes: "govuk-label--s"
+        },
+        classes: "govuk-!-width-full"
+      }) }}
+
+      {{ govukCheckboxes({
+        idPrefix: "substatus",
+        name: "substatus",
+        classes: "govuk-checkboxes--small",
+        fieldset: {
+          legend: {
+            text: "Workflow status",
+            classes: "govuk-fieldset__legend--s"
+          }
+        },
+        items: substatusItems
+      }) }}
+
+      {{ govukCheckboxes({
+        idPrefix: "status",
+        name: "status",
+        classes: "govuk-checkboxes--small",
+        fieldset: {
+          legend: {
+            text: "Issue status",
+            classes: "govuk-fieldset__legend--s"
+          }
+        },
+        hint: {
+          text: "Set by the overnight rules, not by you"
+        },
+        items: statusItems
+      }) }}
+
+      {{ govukSelect({
+        id: "assigned",
+        name: "assigned",
+        label: {
+          text: "Assigned to",
+          classes: "govuk-label--s"
+        },
+        classes: "govuk-!-width-full",
+        items: assignedItems
+      }) }}
+
+      {{ govukSelect({
+        id: "rule",
+        name: "rule",
+        label: {
+          text: "Rule",
+          classes: "govuk-label--s"
+        },
+        classes: "govuk-!-width-full",
+        items: ruleItems
+      }) }}
+
+      {{ govukButton({
+        text: "Apply filters",
+        classes: "govuk-!-margin-bottom-2"
+      }) }}
+
+      <p class="govuk-body-s">
+        <a class="govuk-link govuk-link--no-visited-state" href="/issues">Reset filters</a>
+      </p>
+    </form>
+  </div>
+
+  <div class="govuk-grid-column-three-quarters">
+
+    {% if filters.isDefault %}
+      <p class="govuk-body app-filter-summary">
+        Showing active issues that still need work.
+        <a class="govuk-link govuk-link--no-visited-state" href="/issues?filtered=true">View all {{ totalIssues }} issues</a>
+      </p>
+    {% endif %}
+
+    {% if pagination.total == 0 %}
+
+      <h2 class="govuk-heading-m">No issues match your filters</h2>
+      <p class="govuk-body">
+        Try removing a filter, or
+        <a class="govuk-link govuk-link--no-visited-state" href="/issues">reset the filters</a>.
+      </p>
+
+    {% else %}
+
+      <h2 class="govuk-heading-m govuk-!-margin-bottom-2">
+        {{ pagination.total }} issue{{ "s" if pagination.total != 1 }}
+      </h2>
+      <p class="govuk-body-s govuk-!-margin-bottom-4">
+        Showing {{ pagination.from }} to {{ pagination.to }}
+      </p>
+
+      <table class="govuk-table app-table--compact">
+        <caption class="govuk-visually-hidden">Issues matching your filters</caption>
+        <thead class="govuk-table__head">
+          <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">Issue</th>
+            <th scope="col" class="govuk-table__header">CPH</th>
+            <th scope="col" class="govuk-table__header">What the rule found</th>
+            <th scope="col" class="govuk-table__header">Workflow status</th>
+            <th scope="col" class="govuk-table__header">Assigned to</th>
+          </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+          {% for issue in pagination.items %}
+            <tr class="govuk-table__row">
+              <td class="govuk-table__cell">
+                <a class="govuk-link govuk-link--no-visited-state" href="/issues/{{ issue.id }}">{{ issue.id }}</a>
+                {% if issue.status == "inactive" %}
+                  <div class="govuk-!-margin-top-1">
+                    {{ govukTag({ text: "Inactive", classes: "govuk-tag--grey" }) }}
+                  </div>
+                {% endif %}
+              </td>
+              <td class="govuk-table__cell">
+                {{ issue.cph }}
+                <span class="app-secondary-text">{{ issue.holding }}</span>
+              </td>
+              <td class="govuk-table__cell">
+                {{ issue.errorDescription }}
+                <span class="app-secondary-text">Rule {{ issue.ruleNumber }} &middot; {{ issue.ruleCode }}</span>
+              </td>
+              <td class="govuk-table__cell">
+                {{ govukTag({
+                  text: issue.substatusDetail.name,
+                  classes: "govuk-tag--" + issue.substatusDetail.colour
+                }) }}
+                {% if issue.substatus == "suppressed" and issue.suppressionExpiresAt %}
+                  <span class="app-secondary-text">Until {{ issue.suppressionExpiresAt | govukDate }}</span>
+                {% endif %}
+              </td>
+              <td class="govuk-table__cell">
+                {% if issue.assignedToName %}
+                  {{ issue.assignedToName }}{% if issue.isAssignedToCurrentUser %} <span class="app-secondary-text">You</span>{% endif %}
+                {% else %}
+                  <span class="app-secondary-text">Unassigned</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% if paginationModel %}
+        {{ govukPagination(paginationModel) }}
+      {% endif %}
+
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}

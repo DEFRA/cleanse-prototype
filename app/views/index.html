@@ -1,19 +1,68 @@
 {% extends "layouts/main.html" %}
 
-{% set pageName="Home" %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+
+{% set pageName = "Home" %}
 
 {% block content %}
 
 <div class="govuk-grid-row">
   <div class="govuk-grid-column-two-thirds">
 
-    {% include "govuk-prototype-kit/includes/homepage-top.njk" %}
+    <h1 class="govuk-heading-l">Cleanse</h1>
 
-    <h1 class="govuk-heading-xl">
-      {{ serviceName }}
-    </h1>
+    <p class="govuk-body-l">
+      Compare the contact details held in CTS and SAM, and put right anything
+      that does not match.
+    </p>
 
-    {% include "govuk-prototype-kit/includes/homepage-bottom.njk" %}
+    <p class="govuk-body">
+      The rules run overnight and raise an issue for every difference they
+      find. Your job is to work through those issues and decide what to do with
+      each one.
+    </p>
+
+    {{ govukButton({
+      text: "View issues",
+      href: "/issues",
+      isStartButton: true
+    }) }}
+
+  </div>
+</div>
+
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-full">
+
+    <h2 class="govuk-heading-m">Your work</h2>
+
+    <div class="app-card-row">
+      <a class="app-card" href="/issues?filtered=true&amp;status=active&amp;substatus=todo&amp;substatus=in-progress&amp;assigned=me">
+        <span class="app-card__count">{{ counts.assignedToMe }}</span>
+        <span class="app-card__label">Assigned to you</span>
+      </a>
+      <a class="app-card" href="/issues?filtered=true&amp;status=active&amp;substatus=todo&amp;assigned=unassigned">
+        <span class="app-card__count">{{ counts.unassignedTodo }}</span>
+        <span class="app-card__label">Unassigned and to do</span>
+      </a>
+    </div>
+
+    <h2 class="govuk-heading-m">All active issues</h2>
+
+    <div class="app-card-row">
+      {% for substatus in substatuses %}
+        <a class="app-card" href="/issues?filtered=true&amp;status=active&amp;substatus={{ substatus.id }}">
+          <span class="app-card__count">{{ counts.bySubstatus[substatus.id] }}</span>
+          <span class="app-card__label">{{ substatus.name }}</span>
+        </a>
+      {% endfor %}
+    </div>
+
+    <p class="govuk-body">
+      There are {{ counts.inactive }} inactive issues. The overnight rules no
+      longer find a problem with these, so they do not need working on.
+    </p>
+
   </div>
 </div>
 

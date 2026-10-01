@@ -1,0 +1,230 @@
+{% extends "layouts/main.html" %}
+
+{% from "govuk/components/back-link/macro.njk" import govukBackLink %}
+{% from "govuk/components/button/macro.njk" import govukButton %}
+{% from "govuk/components/inset-text/macro.njk" import govukInsetText %}
+{% from "govuk/components/notification-banner/macro.njk" import govukNotificationBanner %}
+{% from "govuk/components/summary-list/macro.njk" import govukSummaryList %}
+{% from "govuk/components/tag/macro.njk" import govukTag %}
+
+{% set pageName = issue.id %}
+
+{% block backLink %}
+  {{ govukBackLink({
+    text: "Back to issues",
+    href: backLink
+  }) }}
+{% endblock %}
+
+{% block content %}
+
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    {% if flash %}
+      {{ govukNotificationBanner({
+        type: "success",
+        titleText: "Success",
+        html: '<p class="govuk-notification-banner__heading">' + flash + "</p>"
+      }) }}
+    {% endif %}
+
+    <span class="govuk-caption-l">Issue {{ issue.id }}</span>
+    <h1 class="govuk-heading-l">{{ issue.errorDescription }}</h1>
+
+    <p class="govuk-body app-tag-row">
+      {{ govukTag({
+        text: issue.statusDetail.name,
+        classes: "govuk-tag--" + issue.statusDetail.colour
+      }) }}
+      {{ govukTag({
+        text: issue.substatusDetail.name,
+        classes: "govuk-tag--" + issue.substatusDetail.colour
+      }) }}
+    </p>
+
+    {% if issue.status == "inactive" %}
+      {{ govukInsetText({
+        text: "The overnight rules no longer find a problem with this record, so this issue is inactive. You do not need to do anything with it."
+      }) }}
+    {% endif %}
+
+    {% if issue.suppressionLapsedAt %}
+      {{ govukInsetText({
+        html: "Suppression ended on <b>" + (issue.suppressionLapsedAt | govukDate) + "</b>, so this issue has gone back to <b>To do</b>."
+      }) }}
+    {% endif %}
+
+    {% if issue.substatus == "suppressed" and issue.suppressionExpiresAt %}
+      {% set suppressedDate = issue.suppressionExpiresAt | govukDate %}
+      {% set suppressedDays = issue.suppressionExpiresAt | daysUntil %}
+      {{ govukInsetText({
+        html: "Suppressed until <b>" + suppressedDate + "</b> (" + suppressedDays + " days). It will go back to <b>To do</b> on that date."
+      }) }}
+    {% endif %}
+
+  </div>
+</div>
+
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-full">
+
+    <h2 class="govuk-heading-m">Compare the two records</h2>
+
+    <p class="govuk-body">
+      {% if issue.differenceCount == 0 %}
+        CTS and SAM now hold the same contact details for this holding.
+      {% else %}
+        {{ issue.differenceCount }} of {{ issue.comparison | length }} fields do not agree.
+      {% endif %}
+    </p>
+
+    <table class="govuk-table app-compare">
+      <caption class="govuk-table__caption govuk-table__caption--s">
+        Contact details held for CPH {{ issue.cph }} ({{ issue.holding }})
+      </caption>
+      <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+          <th scope="col" class="govuk-table__header app-compare__field">Field</th>
+          <th scope="col" class="govuk-table__header">CTS <span class="app-secondary-text">Cattle Tracing System</span></th>
+          <th scope="col" class="govuk-table__header">SAM <span class="app-secondary-text">Single Application Module</span></th>
+          <th scope="col" class="govuk-table__header app-compare__result">Result</th>
+        </tr>
+      </thead>
+      <tbody class="govuk-table__body">
+        {% for row in issue.comparison %}
+          <tr class="govuk-table__row">
+            <th scope="row" class="govuk-table__header">{{ row.label }}</th>
+            <td class="govuk-table__cell {{ 'app-compare__cell--flagged' if row.result != 'match' }}">
+              {% if row.cts | length %}
+                <ul class="govuk-list app-value-list">
+                  {% for value in row.cts %}<li>{{ value }}</li>{% endfor %}
+                </ul>
+              {% else %}
+                <span class="app-secondary-text">Not held</span>
+              {% endif %}
+            </td>
+            <td class="govuk-table__cell {{ 'app-compare__cell--flagged' if row.result != 'match' }}">
+              {% if row.sam | length %}
+                <ul class="govuk-list app-value-list">
+                  {% for value in row.sam %}<li>{{ value }}</li>{% endfor %}
+                </ul>
+              {% else %}
+                <span class="app-secondary-text">Not held</span>
+              {% endif %}
+            </td>
+            <td class="govuk-table__cell">
+              {{ govukTag({
+                text: row.tag.text,
+                classes: "govuk-tag--" + row.tag.colour
+              }) }}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </div>
+</div>
+
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    <h2 class="govuk-heading-m">What do you want to do?</h2>
+
+    <form method="post" action="/issues/{{ issue.id }}/action" class="govuk-button-group govuk-!-margin-bottom-7">
+
+      {% if issue.substatus == "todo" %}
+        {{ govukButton({ text: "Start work", name: "_action", value: "start" }) }}
+        {{ govukButton({ text: "Mark as resolved", href: "/issues/" + issue.id + "/resolve", classes: "govuk-button--secondary" }) }}
+      {% elif issue.substatus == "in-progress" %}
+        {{ govukButton({ text: "Mark as resolved", href: "/issues/" + issue.id + "/resolve" }) }}
+      {% else %}
+        {{ govukButton({ text: "Move back to To do", name: "_action", value: "reopen" }) }}
+      {% endif %}
+
+      {% if issue.substatus in ["todo", "in-progress"] %}
+        {{ govukButton({ text: "Suppress", href: "/issues/" + issue.id + "/suppress", classes: "govuk-button--secondary" }) }}
+        {{ govukButton({ text: "Ignore", href: "/issues/" + issue.id + "/ignore", classes: "govuk-button--secondary" }) }}
+        {% if issue.assignedTo %}
+          {{ govukButton({ text: "Unassign", name: "_action", value: "unassign", classes: "govuk-button--secondary" }) }}
+        {% else %}
+          {{ govukButton({ text: "Assign to me", name: "_action", value: "assign-to-me", classes: "govuk-button--secondary" }) }}
+        {% endif %}
+      {% endif %}
+
+    </form>
+
+    <h2 class="govuk-heading-m">Issue details</h2>
+
+    {% set assignedHtml %}
+      {% if issue.assignedToName %}
+        {{ issue.assignedToName }}{% if issue.isAssignedToCurrentUser %} (you){% endif %}
+      {% else %}
+        Unassigned
+      {% endif %}
+    {% endset %}
+
+    {{ govukSummaryList({
+      rows: [
+        {
+          key: { text: "CPH" },
+          value: { html: issue.cph + '<br><span class="app-secondary-text">' + issue.holding + "</span>" }
+        },
+        {
+          key: { text: "Rule" },
+          value: { html: "Rule " + issue.ruleNumber + '<br><span class="app-secondary-text">' + issue.ruleCode + "</span>" }
+        },
+        {
+          key: { text: "Status" },
+          value: { html: '<span class="govuk-tag govuk-tag--' + issue.statusDetail.colour + '">' + issue.statusDetail.name + "</span>" }
+        },
+        {
+          key: { text: "Workflow status" },
+          value: { html: '<span class="govuk-tag govuk-tag--' + issue.substatusDetail.colour + '">' + issue.substatusDetail.name + "</span>" }
+        },
+        {
+          key: { text: "Assigned to" },
+          value: { html: assignedHtml },
+          actions: {
+            items: [
+              {
+                href: "/issues/" + issue.id + "/assign",
+                text: "Change",
+                visuallyHiddenText: "who this issue is assigned to"
+              }
+            ]
+          }
+        },
+        {
+          key: { text: "Suppressed until" },
+          value: { text: issue.suppressionExpiresAt | govukDate }
+        } if issue.substatus == "suppressed" and issue.suppressionExpiresAt,
+        {
+          key: { text: "First detected" },
+          value: { text: issue.firstDetectedAt | govukDate }
+        },
+        {
+          key: { text: "Last checked by rules" },
+          value: { text: issue.lastCheckedAt | govukDate }
+        }
+      ]
+    }) }}
+
+    <h2 class="govuk-heading-m">Activity</h2>
+
+    <ol class="govuk-list app-timeline">
+      {% for entry in issue.history | reverse %}
+        <li class="app-timeline__item">
+          <p class="govuk-body govuk-!-margin-bottom-1">{{ entry.text }}</p>
+          <p class="govuk-body-s app-secondary-text govuk-!-margin-bottom-0">
+            {{ entry.by }} &middot; {{ entry.at | govukDateTime }}
+          </p>
+        </li>
+      {% endfor %}
+    </ol>
+
+  </div>
+</div>
+
+{% endblock %}

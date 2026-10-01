@@ -4,3 +4,101 @@
 // 
 
 // Add extra styles here
+
+// Smaller, secondary text used under a main value in tables and summary lists.
+.app-secondary-text {
+  display: block;
+  color: $govuk-secondary-text-colour;
+  font-size: 16px;
+}
+
+// The issue table carries a lot of rows, so tighten it up a little.
+.app-table--compact {
+  font-size: 16px;
+
+  .govuk-table__header,
+  .govuk-table__cell {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
+
+.app-filters {
+  padding-right: govuk-spacing(3);
+}
+
+.app-filter-summary {
+  border-left: 5px solid $govuk-border-colour;
+  padding-left: govuk-spacing(3);
+}
+
+.app-tag-row {
+  display: flex;
+  gap: govuk-spacing(2);
+}
+
+// CTS against SAM. Flagged cells are the whole point of the screen, so make
+// the difference obvious without relying on colour alone.
+.app-compare {
+  &__field {
+    width: 20%;
+  }
+
+  &__result {
+    width: 18%;
+  }
+
+  &__cell--flagged {
+    background-color: govuk-colour("black", $variant: "tint-95");
+    box-shadow: inset 4px 0 0 0 govuk-colour("red");
+  }
+}
+
+.app-value-list {
+  margin-bottom: 0;
+
+  li {
+    margin-bottom: 0;
+  }
+}
+
+.app-timeline {
+  border-left: 4px solid $govuk-border-colour;
+  padding-left: govuk-spacing(4);
+
+  &__item {
+    margin-bottom: govuk-spacing(4);
+  }
+}
+
+// Counts on the home page, each one a link into a filtered list.
+.app-card-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: govuk-spacing(3);
+  margin-bottom: govuk-spacing(6);
+}
+
+.app-card {
+  display: block;
+  min-width: 140px;
+  padding: govuk-spacing(3);
+  border: 1px solid $govuk-border-colour;
+  text-decoration: none;
+
+  &:hover {
+    background-color: govuk-colour("black", $variant: "tint-95");
+  }
+
+  &__count {
+    @include govuk-font($size: 36, $weight: bold);
+    display: block;
+    color: $govuk-link-colour;
+  }
+
+  &__label {
+    @include govuk-font($size: 19);
+    display: block;
+    color: $govuk-text-colour;
+  }
+}

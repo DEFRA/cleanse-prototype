@@ -1,5 +1,5 @@
 {
-  "serviceName": "cleanse-prototype",
+  "serviceName": "Cleanse",
   "plugins": {
     "govuk-frontend": {
       "rebrand": true

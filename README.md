@@ -8,6 +8,11 @@ the [GOV.UK Frontend](https://github.com/alphagov/govuk-frontend).
 - [Requirements](#requirements)
   - [Node.js](#nodejs)
 - [GOV.UK Prototype Kit and GOV.UK Frontend](#govuk-prototype-kit-and-govuk-frontend)
+- [The Cleanse prototype](#the-cleanse-prototype)
+  - [Pages](#pages)
+  - [How an issue works](#how-an-issue-works)
+  - [Where the data comes from](#where-the-data-comes-from)
+  - [Resetting the prototype](#resetting-the-prototype)
 - [Using the refreshed GOV.UK brand](#using-the-refreshed-govuk-brand)
 - [Setting a password](#setting-a-password)
 - [Setting multiple passwords](#setting-multiple-passwords)
@@ -66,6 +71,68 @@ template provides both tools in a wrapper that runs on the Core Delivery Platfor
 > The `cleanse-prototype` is not a production ready application, it is a tool for prototyping. It is not
 > designed to be used in production or to be resilient, secure or performant, nor should it be. It is designed to be
 > used for prototyping ideas and testing them with users. It's a great tool for prototyping GOV web applications.
+
+## The Cleanse prototype
+
+Cleanse lets users compare the contact details held in two data sources - CTS (Cattle Tracing System) and SAM - and
+then action any differences. It is a workflow system: an overnight process raises issues, and users work through them.
+
+Run it locally with `npm run dev` and open http://localhost:3000.
+
+### Pages
+
+| Route                     | What it does                                                                  |
+| ------------------------- | ----------------------------------------------------------------------------- |
+| `/`                       | Counts of what is waiting, each one a link into a filtered list                |
+| `/issues`                 | The working queue - filters, 20 issues per page, pagination                    |
+| `/issues/:id`             | Side-by-side comparison of CTS and SAM, plus the workflow actions and activity |
+| `/issues/:id/assign`      | Assign to a colleague, to yourself, or to no one                               |
+| `/issues/:id/suppress`    | Hide the issue for a set period                                                |
+| `/issues/:id/resolve`     | Record how the difference was put right                                        |
+| `/issues/:id/ignore`      | Close the issue permanently, with a reason                                     |
+
+By default `/issues` shows only active issues that are still **To do** or **In progress**, so users are not faced with
+every issue at once. Filters are held in the query string, so a filtered list can be shared or bookmarked, and the back
+link from an issue returns the user to the same filters and page.
+
+### How an issue works
+
+An issue has two separate lifecycles.
+
+**Status** is owned by the backend and users never change it:
+
+- `active` - the latest run of the rules still finds a problem
+- `inactive` - the latest run no longer finds a problem
+
+**Substatus** is the workflow and is owned by the user:
+
+| Substatus     | Meaning                                                                             |
+| ------------- | ----------------------------------------------------------------------------------- |
+| `todo`        | Not started                                                                         |
+| `in-progress` | Someone is working on it                                                            |
+| `resolved`    | The difference has been put right                                                    |
+| `suppressed`  | Temporarily hidden. On `suppression_expires_at` it returns to `todo` automatically  |
+| `ignored`     | Permanently closed, even if the rules keep finding it                                |
+
+Suppress is the temporary option and ignore is the permanent one. `CLN-1007` is seeded with a suppression that has
+already lapsed, so the automatic return to **To do** can be demonstrated.
+
+### Where the data comes from
+
+[app/data/issues.js](./app/data/issues.js) stands in for the .NET backend. It generates 124 issues from a fixed seed, so
+the same data appears every time the prototype restarts - which makes research sessions repeatable.
+
+> [!WARNING]
+> None of the data is real. Phone numbers use the Ofcom ranges reserved for fiction (`01632 960xxx` and `07700 900xxx`)
+> and every email address uses the reserved `.example` domain. Never put real personal data in a prototype.
+
+Anything a user does is written to session data under a `workflow` key, so the generated issues are never modified and
+each person gets their own working copy.
+
+### Resetting the prototype
+
+Go to `/manage-prototype/clear-data` (also linked in the footer) to clear the session and put every issue back to its
+starting state. Do this between research sessions.
 
 ## Using the refreshed GOV.UK brand
 

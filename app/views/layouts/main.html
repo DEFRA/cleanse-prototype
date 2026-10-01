@@ -4,3 +4,14 @@ https://prototype-kit.service.gov.uk/docs/how-to-use-layouts
 #}
 
 {% extends "govuk-prototype-kit/layouts/govuk-branded.njk" %}
+
+{% from "govuk/components/phase-banner/macro.njk" import govukPhaseBanner %}
+
+{% block beforeContent %}
+  {{ govukPhaseBanner({
+    tag: { text: "Prototype" },
+    html: 'This is a prototype for research. The data is made up and nothing you do here is saved to CTS or SAM.'
+  }) }}
+
+  {% block backLink %}{% endblock %}
+{% endblock %}
